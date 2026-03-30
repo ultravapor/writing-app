@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>관리자 페이지</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;900&family=DM+Mono:wght@300;400;500&display=swap');
+
+  :root {
+    --ink: #1a1a1a;
+    --bg: #f0f0f0;
+    --white: #ffffff;
+    --accent: #c84b31;
+    --accent2: #2d5a8e;
+    --muted: #888;
+    --border: #ddd;
+    --success: #2d7a4f;
+    --success-bg: #e8f4ee;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body { font-family: 'Noto Serif KR', serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; }
+
+  /* ─── LOGIN ─── */
+  #loginScreen { align-items: center; justify-content: center; padding: 2rem; }
+
+  .login-box { background: white; border: 1px solid var(--border); padding: 3rem; width: 100%; max-width: 400px; box-shadow: 4px 4px 0 #ddd; }
+
+  .login-logo { text-align: center; margin-bottom: 2rem; }
+  .login-logo h1 { font-size: 1.3rem; font-weight: 900; }
+  .login-logo .badge { display: inline-block; background: var(--ink); color: white; font-family: 'DM Mono', monospace; font-size: 0.65rem; padding: 0.2rem 0.6rem; margin-top: 0.5rem; letter-spacing: 0.1em; }
+
+  .field { margin-bottom: 1.2rem; }
+  .field label { display: block; font-size: 0.7rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.1em; }
+  .field input { width: 100%; padding: 0.7rem 1rem; border: 1px solid var(--border); font-family: 'Noto Serif KR', serif; font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+  .field input:focus { border-color: var(--ink); }
+
+  .btn-primary { width: 100%; padding: 0.8rem; background: var(--ink); color: white; border: none; font-family: 'Noto Serif KR', serif; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 0.5rem; }
+  .btn-primary:hover { background: var(--accent); }
+  .btn-primary:disabled { background: var(--border); cursor: not-allowed; }
+
+  .error-msg { color: var(--accent); font-size: 0.8rem; text-align: center; margin-top: 0.8rem; min-height: 1.2rem; font-family: 'DM Mono', monospace; }
+
+  /* ─── ADMIN APP ─── */
+  #appScreen { flex-direction: column; }
+
+  .admin-header { background: var(--ink); color: white; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+  .admin-header h1 { font-size: 1rem; font-weight: 900; }
+  .admin-header .badge { background: var(--accent); font-family: 'DM Mono', monospace; font-size: 0.65rem; padding: 0.2rem 0.5rem; margin-left: 0.6rem; }
+
+  .btn-logout-admin { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: rgba(255,255,255,0.6); background: none; border: 1px solid rgba(255,255,255,0.2); padding: 0.3rem 0.7rem; cursor: pointer; transition: all 0.2s; }
+  .btn-logout-admin:hover { color: white; border-color: white; }
+
+  .admin-body { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; width: 100%; }
+
+  /* 탭 */
+  .tabs { display: flex; border-bottom: 2px solid var(--ink); margin-bottom: 2rem; }
+  .tab { padding: 0.7rem 1.5rem; font-family: 'DM Mono', monospace; font-size: 0.8rem; letter-spacing: 0.05em; color: var(--muted); background: none; border: none; cursor: pointer; transition: all 0.2s; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+  .tab:hover { color: var(--ink); }
+  .tab.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 500; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* 섹션 */
+  .section-title { font-size: 1rem; font-weight: 900; margin-bottom: 0.4rem; }
+  .section-desc { font-size: 0.8rem; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 1.5rem; line-height: 1.6; }
+
+  /* 프롬프트 편집 */
+  .prompt-block { background: white; border: 1px solid var(--border); margin-bottom: 1.5rem; }
+  .prompt-block-header { padding: 0.8rem 1.2rem; background: #f8f8f8; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.6rem; }
+  .prompt-block-icon { font-size: 1.1rem; }
+  .prompt-block-title { font-size: 0.85rem; font-weight: 600; }
+  .prompt-block-key { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted); background: #eee; padding: 0.15rem 0.4rem; }
+
+  .prompt-textarea { width: 100%; min-height: 180px; padding: 1rem 1.2rem; border: none; font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--ink); outline: none; resize: vertical; line-height: 1.7; }
+
+  .save-bar { display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; }
+  .save-msg { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--success); min-height: 1rem; }
+
+  .btn-save { padding: 0.7rem 2rem; background: var(--accent2); color: white; border: none; font-family: 'Noto Serif KR', serif; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+  .btn-save:hover { background: #1f4070; }
+  .btn-save:disabled { background: var(--border); cursor: not-allowed; }
+
+  /* 계정 관리 */
+  .user-list { background: white; border: 1px solid var(--border); margin-bottom: 1.5rem; }
+  .user-item { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--border); }
+  .user-item:last-child { border-bottom: none; }
+  .user-info { font-family: 'DM Mono', monospace; font-size: 0.82rem; }
+  .user-id { font-weight: 500; color: var(--ink); }
+  .user-pw { color: var(--muted); margin-left: 1rem; }
+
+  .btn-delete { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--accent); background: none; border: 1px solid #f0c0b0; padding: 0.25rem 0.6rem; cursor: pointer; transition: all 0.2s; }
+  .btn-delete:hover { background: var(--accent); color: white; }
+
+  .add-user-form { background: white; border: 1px solid var(--border); padding: 1.2rem; display: flex; gap: 0.8rem; align-items: flex-end; flex-wrap: wrap; }
+  .add-field { flex: 1; min-width: 140px; }
+  .add-field label { display: block; font-size: 0.68rem; font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .add-field input { width: 100%; padding: 0.6rem 0.8rem; border: 1px solid var(--border); font-family: 'DM Mono', monospace; font-size: 0.82rem; outline: none; transition: border-color 0.2s; }
+  .add-field input:focus { border-color: var(--ink); }
+
+  .btn-add { padding: 0.6rem 1.5rem; background: var(--ink); color: white; border: none; font-family: 'Noto Serif KR', serif; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.2s; }
+  .btn-add:hover { background: var(--accent2); }
+
+  .empty-msg { padding: 2rem; text-align: center; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="screen active">
+  <div class="login-box">
+    <div class="login-logo">
+      <h1>관리자 페이지</h1>
+      <div class="badge">ADMIN ONLY</div>
+    </div>
+    <div class="field">
+      <label>관리자 비밀번호</label>
+      <input type="password" id="adminPw" placeholder="관리자 비밀번호 입력">
+    </div>
+    <button class="btn-primary" id="loginBtn" onclick="handleLogin()">로그인</button>
+    <div class="error-msg" id="loginError"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen" class="screen">
+  <div class="admin-header">
+    <div>
+      <h1 style="display:inline">AI 글쓰기 도구</h1>
+      <span class="badge">ADMIN</span>
+    </div>
+    <button class="btn-logout-admin" onclick="handleLogout()">로그아웃</button>
+  </div>
+
+  <div class="admin-body">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('prompts', this)">시스템 프롬프트</button>
+      <button class="tab" onclick="switchTab('users', this)">사용자 계정</button>
+    </div>
+
+    <!-- 프롬프트 탭 -->
+    <div id="tab-prompts" class="tab-content active">
+      <div class="section-title">시스템 프롬프트 관리</div>
+      <div class="section-desc">각 글 유형별 시스템 프롬프트를 수정하고 저장하세요.<br>저장 즉시 사용자 페이지에 반영됩니다.</div>
+
+      <div class="prompt-block">
+        <div class="prompt-block-header">
+          <span class="prompt-block-icon">📝</span>
+          <span class="prompt-block-title">네이버 블로그</span>
+          <span class="prompt-block-key">blog</span>
+        </div>
+        <textarea class="prompt-textarea" id="prompt-blog" placeholder="블로그 시스템 프롬프트..."></textarea>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-block-header">
+          <span class="prompt-block-icon">🧵</span>
+          <span class="prompt-block-title">스레드</span>
+          <span class="prompt-block-key">threads</span>
+        </div>
+        <textarea class="prompt-textarea" id="prompt-threads" placeholder="스레드 시스템 프롬프트..."></textarea>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-block-header">
+          <span class="prompt-block-icon">📋</span>
+          <span class="prompt-block-title">제안서</span>
+          <span class="prompt-block-key">proposal</span>
+        </div>
+        <textarea class="prompt-textarea" id="prompt-proposal" placeholder="제안서 시스템 프롬프트..."></textarea>
+      </div>
+
+      <div class="save-bar">
+        <span class="save-msg" id="promptSaveMsg"></span>
+        <button class="btn-save" id="savePromptsBtn" onclick="savePrompts()">저장하기</button>
+      </div>
+    </div>
+
+    <!-- 계정 탭 -->
+    <div id="tab-users" class="tab-content">
+      <div class="section-title">사용자 계정 관리</div>
+      <div class="section-desc">사용자 계정을 추가하거나 삭제하세요.<br>변경사항은 즉시 반영됩니다.</div>
+
+      <div class="user-list" id="userList">
+        <div class="empty-msg">불러오는 중...</div>
+      </div>
+
+      <div class="add-user-form">
+        <div class="add-field">
+          <label>아이디</label>
+          <input type="text" id="newUserId" placeholder="새 아이디" autocomplete="off">
+        </div>
+        <div class="add-field">
+          <label>비밀번호</label>
+          <input type="text" id="newUserPw" placeholder="새 비밀번호">
+        </div>
+        <button class="btn-add" onclick="addUser()">추가</button>
+      </div>
+      <div class="save-msg" id="userSaveMsg" style="margin-top:0.8rem"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const WORKER_URL = 'https://writing-api.ultravapor1228.workers.dev';
+let adminPw = '';
+let users = [];
+
+document.getElementById('adminPw').addEventListener('keydown', e => { if(e.key==='Enter') handleLogin(); });
+
+async function handleLogin() {
+  const pw = document.getElementById('adminPw').value;
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+
+  if(!pw) { errEl.textContent = '비밀번호를 입력해주세요'; return; }
+
+  btn.disabled = true;
+  btn.textContent = '확인 중...';
+  errEl.textContent = '';
+
+  try {
+    const res = await fetch(`${WORKER_URL}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pw, isAdmin: true })
+    });
+    const data = await res.json();
+
+    if(data.success) {
+      adminPw = pw;
+      showScreen('appScreen');
+      loadPrompts();
+      loadUsers();
+    } else {
+      errEl.textContent = data.message || '인증 실패';
+    }
+  } catch(e) {
+    errEl.textContent = '서버 연결 오류';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '로그인';
+  }
+}
+
+function handleLogout() {
+  adminPw = '';
+  document.getElementById('adminPw').value = '';
+  showScreen('loginScreen');
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+}
+
+// ── 프롬프트 ──
+async function loadPrompts() {
+  try {
+    const res = await fetch(`${WORKER_URL}/admin/prompts`, {
+      headers: { 'X-Admin-Password': adminPw }
+    });
+    const data = await res.json();
+    document.getElementById('prompt-blog').value = data.blog || '';
+    document.getElementById('prompt-threads').value = data.threads || '';
+    document.getElementById('prompt-proposal').value = data.proposal || '';
+  } catch(e) {
+    console.error('프롬프트 로드 실패', e);
+  }
+}
+
+async function savePrompts() {
+  const btn = document.getElementById('savePromptsBtn');
+  const msg = document.getElementById('promptSaveMsg');
+
+  btn.disabled = true;
+  btn.textContent = '저장 중...';
+  msg.textContent = '';
+
+  try {
+    const prompts = {
+      blog: document.getElementById('prompt-blog').value,
+      threads: document.getElementById('prompt-threads').value,
+      proposal: document.getElementById('prompt-proposal').value
+    };
+
+    const res = await fetch(`${WORKER_URL}/admin/prompts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPw },
+      body: JSON.stringify(prompts)
+    });
+    const data = await res.json();
+
+    if(data.success) {
+      msg.textContent = '✓ 저장 완료';
+      setTimeout(() => msg.textContent = '', 3000);
+    }
+  } catch(e) {
+    msg.textContent = '저장 실패: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '저장하기';
+  }
+}
+
+// ── 계정 ──
+async function loadUsers() {
+  try {
+    const res = await fetch(`${WORKER_URL}/admin/users`, {
+      headers: { 'X-Admin-Password': adminPw }
+    });
+    users = await res.json();
+    renderUsers();
+  } catch(e) {
+    document.getElementById('userList').innerHTML = '<div class="empty-msg">불러오기 실패</div>';
+  }
+}
+
+function renderUsers() {
+  const list = document.getElementById('userList');
+  if(!users.length) {
+    list.innerHTML = '<div class="empty-msg">등록된 계정이 없습니다</div>';
+    return;
+  }
+  list.innerHTML = users.map((u, i) => `
+    <div class="user-item">
+      <div class="user-info">
+        <span class="user-id">${u.id}</span>
+        <span class="user-pw">pw: ${u.pw}</span>
+      </div>
+      <button class="btn-delete" onclick="deleteUser(${i})">삭제</button>
+    </div>
+  `).join('');
+}
+
+async function addUser() {
+  const id = document.getElementById('newUserId').value.trim();
+  const pw = document.getElementById('newUserPw').value.trim();
+  const msg = document.getElementById('userSaveMsg');
+
+  if(!id || !pw) { msg.textContent = '아이디와 비밀번호를 입력해주세요'; return; }
+  if(users.find(u => u.id === id)) { msg.textContent = '이미 존재하는 아이디입니다'; return; }
+
+  users.push({ id, pw });
+  await saveUsers();
+  document.getElementById('newUserId').value = '';
+  document.getElementById('newUserPw').value = '';
+  renderUsers();
+}
+
+async function deleteUser(index) {
+  if(!confirm(`"${users[index].id}" 계정을 삭제할까요?`)) return;
+  users.splice(index, 1);
+  await saveUsers();
+  renderUsers();
+}
+
+async function saveUsers() {
+  const msg = document.getElementById('userSaveMsg');
+  try {
+    await fetch(`${WORKER_URL}/admin/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPw },
+      body: JSON.stringify(users)
+    });
+    msg.textContent = '✓ 저장 완료';
+    setTimeout(() => msg.textContent = '', 2000);
+  } catch(e) {
+    msg.textContent = '저장 실패';
+  }
+}
+</script>
+</body>
+</html>
